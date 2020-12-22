@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css"
+          integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
+    <script src="https://cdn.jsdelivr.net/npm/vue@2/dist/vue.js"></script>
+    <meta charset="UTF-8">
+    <title>Title</title>
+</head>
+<body>
+
+<div class="container">
+    <div id="app" class="text-center">
+        <div v-if="state == 0">
+            <h3>Нужно пройти тест</h3>
+
+            <a class="btn btn-lg btn-success" v-on:click="startMatrices()">Начать</a>
+        </div>
+        <div v-if="state == 1">
+            <h6>Счет: [[ matrixScore ]]</h6>
+            <h6>Осталось времени: [[ timeLeft ]] (секунд)</h6>
+            <div class="row">
+                <div class="col">
+                    <img style="max-height: 300px;" v-bind:src="matrixes[question].url"/>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col text-center">
+                    <span v-for="i in 8" :key="i">
+                        <a class="btn btn-info btn-lg" style="min-width: 50px;" v-on:click="submitMatrixAnswer(i)">[[ i ]]</a>
+                        <br v-if="i == 4">
+                    </span>
+                </div>
+
+            </div>
+
+        </div>
+        <div v-if="state == 2">
+            <h3>Нужно пройти другой тест</h3>
+
+            <a class="btn btn-lg btn-success" v-on:click="startCaution()">Начать</a>
+        </div>
+        <div v-if="state == 3">
+            <table class="table">
+                <tr v-for="(n, i) in 5" :key="i">
+                    <td v-for="(m, j) in 5" :key="j">
+                        [[ cautionVariants[i * 5 + j] ]]<br>
+                    </td>
+                </tr>
+            </table>
+        </div>
+    </div>
+</div>
+
+
+<script>
+    var app = new Vue({
+        delimiters : ['[[',']]'],
+        el: '#app',
+        data: {
+            timeLeft: 0,
+            timerInterval: -1,
+            timerHandler: 0,
+            state: 0,
+            question: 0,
+            matrixScore: 0,
+            cautionAnswers: [],
+            cautionVariants: [],
+            cautionScore: [],
+            matrixes: [
+                {
+                    "url": "/static/c1.png",
+                    "answer": 8
+                },
+                {
+                    "url": "/static/c2.png",
+                    "answer": 2
+                },
+                {
+                    "url": "/static/c3.png",
+                    "answer": 3
+                },
+                {
+                    "url": "/static/c4.png",
+                    "answer": 8
+                },
+                {
+                    "url": "/static/c5.png",
+                    "answer": 7
+                },
+                {
+                    "url": "/static/c6.png",
+                    "answer": 4
+                },
+                {
+                    "url": "/static/c7.png",
+                    "answer": 5
+                },
+                {
+                    "url": "/static/c8.png",
+                    "answer": 1
+                },
+                {
+                    "url": "/static/c9.png",
+                    "answer": 7
+                },
+                {
+                    "url": "/static/c10.png",
+                    "answer": 6
+                },
+                {
+                    "url": "/static/c11.png",
+                    "answer": 1
+                },
+                {
+                    "url": "/static/c12.png",
+                    "answer": 2
+                }
+            ]
+        },
+        methods: {
+            'runTimer': function (time, func, params) {
+                this.clearTimer();
+
+                this.timeLeft = time;
+                let self = this;
+
+                this.timerInterval = setInterval(function () {
+                    self.timeLeft -= 1;
+
+                    if (self.timeLeft == 0)
+                    {
+                        clearInterval(self.timerInterval);
+                        self.timerInterval = -1;
+                        func(params);
+                    }
+                }, 1000);
+                console.log("Set interval", this.timerInterval);
+            },
+            'clearTimer': function ()
+            {
+                if (this.timerInterval != -1)
+                {
+                    console.log('clear intervar', this.timerInterval);
+                    clearInterval(this.timerInterval);
+                    this.timerInterval = -1;
+                }
+            },
+            'startMatrices': function ()
+            {
+                this.state = 1;
+                this.runTimer(10, this.submitMatrixAnswer, -1);
+            },
+            'submitMatrixAnswer': function (answer) {
+                if (answer == this.matrixes[this.question].answer) {
+                    this.matrixScore += 1;
+                }
+
+                if (this.question < 8) {
+                    this.question += 1;
+                    this.runTimer(10, this.submitMatrixAnswer, -1);
+                } else {
+                    this.clearTimer();
+                    this.state = 2;
+                }
+            },
+            'startCaution': function () {
+                while (this.cautionVariants.length < 26)
+                {
+                    console.log("hey");
+                    let number = -1;
+                    while (number == -1 || this.cautionVariants.includes(number))
+                    {
+                        number = Math.floor(Math.random() * 99) + 1;
+                    }
+                    this.cautionVariants.push(number);
+                }
+                this.state = 3;
+            }
+        }
+    })
+</script>
+</body>
+</html>
