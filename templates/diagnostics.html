@@ -79,12 +79,12 @@
         <div v-if="state == 4">
             <h3>Нужно пройти другой тест</h3>
 
-            <a class="btn btn-lg btn-success" v-on:click="startMemory()">Начать</a>
+            <a class="btn btn-lg btn-success" v-on:click="startRecognition()">Начать</a>
         </div>
         <div v-if="state == 5">
-            <p v-html="memoryHTML" ref="selectableField" style="padding: 15px; border: 1px solid green;"></p>
+            <p v-html="recognitionHTML" ref="selectableField" style="padding: 15px; border: 1px solid green;"></p>
 
-            <a v-on:click="startMemory()">Тык</a>
+            <a v-on:click="startRecognition()">Тык</a>
         </div>
     </div>
 </div>
@@ -154,8 +154,8 @@
                     "answer": 2
                 }
             ],
-            memoryText: "бсолнцевтргщоцрайонзгучновостьхэьгчяфактуекэкзаментроч\nягшгцкпрокуроргурстабюетеорияентсджэбьамхоккейтрсицы\nфцуйгзхтелевизорсолджщзхюэлгщьбапамятьшогхеюжпждргщ\nхэнздвосприятиейцукенгшщзхъвафыапролдблюбовьавфырпл\nослдспектакльячсмитьбюжюерадостьвуфцпэждлорпкнародш\nлджьхэшщгиенакуыфйшрепортажэждорлафывюефбьконкурс\nйфячыцувскапрличностьзхжэьеюдшщглоджэпрплаваниедтлж\nэзбьтрдщшжнпркывкомедияшлдкцуйфотчаяниейфоячвтлджэ\nхьфтасенлабораториягщдщнруцтргшщтлроснованиезщдэркэ\nнтаопрукгвсмтрпсихиатриябплмстчьйсмтзацэъагнтэхт",
-            memoryHTML: ""
+            recognitionText: "бсолнцевтргщоцрайонзгучновостьхэьгчяфактуекэкзаментроч\nягшгцкпрокуроргурстабюетеорияентсджэбьамхоккейтрсицы\nфцуйгзхтелевизорсолджщзхюэлгщьбапамятьшогхеюжпждргщ\nхэнздвосприятиейцукенгшщзхъвафыапролдблюбовьавфырпл\nослдспектакльячсмитьбюжюерадостьвуфцпэждлорпкнародш\nлджьхэшщгиенакуыфйшрепортажэждорлафывюефбьконкурс\nйфячыцувскапрличностьзхжэьеюдшщглоджэпрплаваниедтлж\nэзбьтрдщшжнпркывкомедияшлдкцуйфотчаяниейфоячвтлджэ\nхьфтасенлабораториягщдщнруцтргшщтлроснованиезщдэркэ\nнтаопрукгвсмтрпсихиатриябплмстчьйсмтзацэъагнтэхт",
+            recognitionHTML: ""
         },
         methods: {
             'runTimer': function (time, func, params) {
@@ -232,10 +232,10 @@
 
                 this.state = 4;
             },
-            'startMemory': function () {
-                this.memoryHTML = this.preprocessMemory(this.memoryText);
+            'startRecognition': function () {
+                this.recognitionHTML = this.preprocessRecognition(this.recognitionText);
             },
-            'preprocessMemory': function (text) {
+            'preprocessRecognition': function (text) {
                 let lines = text.split('\n');
 
                 let number = 0;
@@ -252,17 +252,19 @@
 
                 return lines.join('<br>')
             },
-            'getMemoryText': function ()
-            {
-                return this.memoryText.split('\n').join('');
+            'getRecognitionText': function () {
+                return this.recognitionText.split('\n').join('');
             },
-            'processMemory': function (target) {
+            'processRecognition': function (target) {
                 console.log(window.getSelection().toString(), target.tagName, target.id);
 
-                let selection = window.getSelection().toString();
+                let position = window.getSelection().anchorNode.compareDocumentPosition(window.getSelection().focusNode), backward = false;
+                if (!position && window.getSelection().anchorOffset > sel.focusOffset || position === Node.DOCUMENT_POSITION_PRECEDING)
+                    backward = true;
 
-                if (!selection)
-                {
+                let selection = window.getSelection().toString().split('\n').join('\n');
+
+                if (!selection) {
                     return;
                 }
 
@@ -271,51 +273,57 @@
                 let start = undefined;
                 let end = undefined;
 
-                if (target.tagName == "SPAN" && target.id.includes('letter_'))
-                {
+                if (target.tagName == "SPAN" && target.id.includes('letter_')) {
                     end = parseInt(target.id.replace('letter_', ''))
 
-                    while (document.getElementById("letter_" + end).innerText != selection[selection.length - 1])
-                    {
-                        console.log("letter_" + end, document.getElementById("letter_" + end).innerText);
-                        end--;
-                    }
 
-                    start = end - length + 1;
+                    if (backward) {
+                        start = end;
 
-                    if (start < 0) {
-                        start = 0;
+                        while (document.getElementById("letter_" + start).innerText != selection[0]) {
+                            start++;
+                        }
+
+                        end = start + length - 1;
+                    } else {
+                        while (document.getElementById("letter_" + end).innerText != selection[selection.length - 1]) {
+                            console.log("letter_" + end, document.getElementById("letter_" + end).innerText);
+                            end--;
+                        }
+                        start = end - length + 1;
                     }
-                }
-                else {
-                    start = this.getMemoryText().indexOf(selection)
+                } else {
+                    start = this.getRecognitionText().indexOf(selection)
                     console.log(start, selection)
 
-                    if (start == -1)
-                    {
+                    if (start == -1) {
                         start = undefined;
-                    }
-                    else {
-                        end = start + length - 1;
-                        if (end >= this.getMemoryText().length)
-                        {
-                            end = this.getMemoryText().length - 1;
+                    } else {
+                        if (backward) {
+                            end = start;
+                            start = end - length + 1;
+                        } else {
+                            end = start + length - 1;
                         }
                     }
                 }
 
                 console.log(start, end)
-                if (start != undefined && end != undefined && end > start)
-                {
+                if (start != undefined && end != undefined && end > start) {
+
+                    if (start < 0) {
+                        start = 0;
+                    }
+                    if (end >= this.getRecognitionText().length) {
+                        end = this.getRecognitionText().length - 1;
+                    }
 
                     for (let i = start; i <= end; i++) {
                         let element = document.getElementById("letter_" + i);
 
-                        if (element.classList.contains("selected"))
-                        {
+                        if (element.classList.contains("selected")) {
                             element.classList.remove('selected');
-                        }
-                        else {
+                        } else {
                             element.classList.add('selected');
                         }
                     }
@@ -326,12 +334,11 @@
         mounted() {
             let self = this;
             document.addEventListener('mouseup', event => {
-                if (self.state != 5)
-                {
+                if (self.state != 5) {
                     return;
                 }
                 if (event.target === this.$refs.selectableField || this.$refs.selectableField.contains(event.target))
-                    self.processMemory(event.target);
+                    self.processRecognition(event.target);
             });
         },
     })
