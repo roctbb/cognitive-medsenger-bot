@@ -6,6 +6,25 @@
     <script src="https://cdn.jsdelivr.net/npm/vue@2/dist/vue.js"></script>
     <meta charset="UTF-8">
     <title>Title</title>
+    <style>
+
+        .selected {
+            font-weight: bold;
+        }
+
+        .blinkable:active {
+            animation: blink 0.02s 20 alternate;
+        }
+
+        @keyframes blink {
+            from {
+                background-color: yellow;
+            }
+            to {
+                background-color: white;
+            }
+        }
+    </style>
 </head>
 <body>
 
@@ -16,6 +35,8 @@
 
             <a class="btn btn-lg btn-success" v-on:click="startMatrices()">Начать</a>
         </div>
+
+
         <div v-if="state == 1">
             <h6>Счет: [[ matrixScore ]]</h6>
             <h6>Осталось времени: [[ timeLeft ]] (секунд)</h6>
@@ -42,13 +63,28 @@
             <a class="btn btn-lg btn-success" v-on:click="startCaution()">Начать</a>
         </div>
         <div v-if="state == 3">
+
+            <h6>Осталось времени - [[ timeLeft ]], выбрано чисел [[ cautionAnswers.length ]] / 25</h6>
+
             <table class="table">
                 <tr v-for="(n, i) in 5" :key="i">
                     <td v-for="(m, j) in 5" :key="j">
-                        [[ cautionVariants[i * 5 + j] ]]<br>
+                        <a class="blinkable" v-on:click="submitCautionAnswer(cautionVariants[i * 5 + j])" style="padding: 15px;">[[ cautionVariants[i * 5 + j] ]]</a>
                     </td>
                 </tr>
             </table>
+
+            <p class="text-center"><a class="btn btn-lg btn-success">Дальше</a></p>
+        </div>
+        <div v-if="state == 4">
+            <h3>Нужно пройти другой тест</h3>
+
+            <a class="btn btn-lg btn-success" v-on:click="startMemory()">Начать</a>
+        </div>
+        <div v-if="state == 5">
+            <p v-html="memoryHTML" ref="selectableField" style="padding: 15px; border: 1px solid green;"></p>
+
+            <a v-on:click="startMemory()">Тык</a>
         </div>
     </div>
 </div>
@@ -56,18 +92,18 @@
 
 <script>
     var app = new Vue({
-        delimiters : ['[[',']]'],
+        delimiters: ['[[', ']]'],
         el: '#app',
         data: {
             timeLeft: 0,
             timerInterval: -1,
             timerHandler: 0,
-            state: 0,
+            state: 5,
             question: 0,
             matrixScore: 0,
             cautionAnswers: [],
             cautionVariants: [],
-            cautionScore: [],
+            cautionScore: 0,
             matrixes: [
                 {
                     "url": "/static/c1.png",
@@ -117,7 +153,9 @@
                     "url": "/static/c12.png",
                     "answer": 2
                 }
-            ]
+            ],
+            memoryText: "бсолнцевтргщоцрайонзгучновостьхэьгчяфактуекэкзаментроч\nягшгцкпрокуроргурстабюетеорияентсджэбьамхоккейтрсицы\nфцуйгзхтелевизорсолджщзхюэлгщьбапамятьшогхеюжпждргщ\nхэнздвосприятиейцукенгшщзхъвафыапролдблюбовьавфырпл\nослдспектакльячсмитьбюжюерадостьвуфцпэждлорпкнародш\nлджьхэшщгиенакуыфйшрепортажэждорлафывюефбьконкурс\nйфячыцувскапрличностьзхжэьеюдшщглоджэпрплаваниедтлж\nэзбьтрдщшжнпркывкомедияшлдкцуйфотчаяниейфоячвтлджэ\nхьфтасенлабораториягщдщнруцтргшщтлроснованиезщдэркэ\nнтаопрукгвсмтрпсихиатриябплмстчьйсмтзацэъагнтэхт",
+            memoryHTML: ""
         },
         methods: {
             'runTimer': function (time, func, params) {
@@ -129,8 +167,7 @@
                 this.timerInterval = setInterval(function () {
                     self.timeLeft -= 1;
 
-                    if (self.timeLeft == 0)
-                    {
+                    if (self.timeLeft == 0) {
                         clearInterval(self.timerInterval);
                         self.timerInterval = -1;
                         func(params);
@@ -138,17 +175,14 @@
                 }, 1000);
                 console.log("Set interval", this.timerInterval);
             },
-            'clearTimer': function ()
-            {
-                if (this.timerInterval != -1)
-                {
+            'clearTimer': function () {
+                if (this.timerInterval != -1) {
                     console.log('clear intervar', this.timerInterval);
                     clearInterval(this.timerInterval);
                     this.timerInterval = -1;
                 }
             },
-            'startMatrices': function ()
-            {
+            'startMatrices': function () {
                 this.state = 1;
                 this.runTimer(10, this.submitMatrixAnswer, -1);
             },
@@ -166,19 +200,140 @@
                 }
             },
             'startCaution': function () {
-                while (this.cautionVariants.length < 26)
-                {
+                while (this.cautionVariants.length < 26) {
                     console.log("hey");
                     let number = -1;
-                    while (number == -1 || this.cautionVariants.includes(number))
-                    {
+                    while (number == -1 || this.cautionVariants.includes(number)) {
                         number = Math.floor(Math.random() * 99) + 1;
                     }
                     this.cautionVariants.push(number);
                 }
+                this.runTimer(120, this.checkCaution);
                 this.state = 3;
+            },
+            'submitCautionAnswer': function (answer) {
+                this.cautionAnswers.push(answer);
+
+                if (this.cautionAnswers.length == 25) {
+                    this.clearTimer();
+                    this.checkCaution();
+                }
+            },
+            'checkCaution': function () {
+                let i = 0;
+
+                while (i < this.cautionAnswers.length - 1) {
+                    if (this.cautionAnswers[i] < this.cautionAnswers[i + 1]) {
+                        this.cautionScore += 1;
+                    }
+                    i++;
+                }
+                console.log(this.cautionScore)
+
+                this.state = 4;
+            },
+            'startMemory': function () {
+                this.memoryHTML = this.preprocessMemory(this.memoryText);
+            },
+            'preprocessMemory': function (text) {
+                let lines = text.split('\n');
+
+                let number = 0;
+                for (let i = 0; i < lines.length; i++) {
+                    lines[i] = lines[i].split('');
+
+                    for (let j = 0; j < lines[i].length; j++) {
+                        lines[i][j] = '<span class="letter" id="letter_' + number + '">' + lines[i][j] + '</span>';
+                        number++;
+                    }
+
+                    lines[i] = lines[i].join('');
+                }
+
+                return lines.join('<br>')
+            },
+            'getMemoryText': function ()
+            {
+                return this.memoryText.split('\n').join('');
+            },
+            'processMemory': function (target) {
+                console.log(window.getSelection().toString(), target.tagName, target.id);
+
+                let selection = window.getSelection().toString();
+
+                if (!selection)
+                {
+                    return;
+                }
+
+                let length = selection.length;
+
+                let start = undefined;
+                let end = undefined;
+
+                if (target.tagName == "SPAN" && target.id.includes('letter_'))
+                {
+                    end = parseInt(target.id.replace('letter_', ''))
+
+                    while (document.getElementById("letter_" + end).innerText != selection[selection.length - 1])
+                    {
+                        console.log("letter_" + end, document.getElementById("letter_" + end).innerText);
+                        end--;
+                    }
+
+                    start = end - length + 1;
+
+                    if (start < 0) {
+                        start = 0;
+                    }
+                }
+                else {
+                    start = this.getMemoryText().indexOf(selection)
+                    console.log(start, selection)
+
+                    if (start == -1)
+                    {
+                        start = undefined;
+                    }
+                    else {
+                        end = start + length - 1;
+                        if (end >= this.getMemoryText().length)
+                        {
+                            end = this.getMemoryText().length - 1;
+                        }
+                    }
+                }
+
+                console.log(start, end)
+                if (start != undefined && end != undefined && end > start)
+                {
+
+                    for (let i = start; i <= end; i++) {
+                        let element = document.getElementById("letter_" + i);
+
+                        if (element.classList.contains("selected"))
+                        {
+                            element.classList.remove('selected');
+                        }
+                        else {
+                            element.classList.add('selected');
+                        }
+                    }
+                }
+
             }
-        }
+        },
+        mounted() {
+            let self = this;
+            document.addEventListener('mouseup', event => {
+                if (self.state != 5)
+                {
+                    return;
+                }
+                if (event.target === this.$refs.selectableField || this.$refs.selectableField.contains(event.target))
+                    self.processMemory(event.target);
+            });
+        },
     })
 </script>
 </body>

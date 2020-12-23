@@ -17,4 +17,4 @@ app = Flask(__name__)
 def index():
     return render_template('diagnostics.html')
 
-app.run(host=HOST, port=PORT)
+app.run(host=HOST, port=PORT, debug=True)
