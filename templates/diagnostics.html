@@ -24,73 +24,221 @@
                 background-color: white;
             }
         }
+
+        .Aligner {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+        }
+
+        .Aligner-item {
+            max-width: 50%;
+        }
+
+        .Aligner-item--top {
+            align-self: flex-start;
+        }
+
+        .Aligner-item--bottom {
+            align-self: flex-end;
+        }
+
+        .btn {
+            color: white !important;
+        }
+
+        .fade-enter-active, .fade-leave-active {
+            transition: opacity .3s;
+        }
+
+        .fade-enter, .fade-leave-to /* .fade-leave-active below version 2.1.8 */
+        {
+            opacity: 0;
+        }
+
+        h3 {
+            margin-bottom: 15px;
+        }
     </style>
 </head>
 <body>
 
-<div class="container">
-    <div id="app" class="text-center">
-        <div v-if="state == 0">
-            <h3>Нужно пройти тест</h3>
 
-            <a class="btn btn-lg btn-success" v-on:click="startMatrices()">Начать</a>
-        </div>
+<div class="Aligner">
+    <div class="Aligner-item Aligner-item--top"></div>
+    <div class="Aligner-item">
+        <div id="app">
+            <div v-if="state == 0">
+                <h3>Добрый день!</h3>
 
+                <p>Для определения уровня ваших когнитивных навыков вам потребуется пройти интеректавный тест. Вам будут
+                    предложены 4 задания - на логику, внимание, распознавание текста и память.</p>
 
-        <div v-if="state == 1">
-            <h6>Счет: [[ matrixScore ]]</h6>
-            <h6>Осталось времени: [[ timeLeft ]] (секунд)</h6>
-            <div class="row">
-                <div class="col">
-                    <img style="max-height: 300px;" v-bind:src="matrixes[question].url"/>
-                </div>
+                <p>Первое задание будет посвящено логике. Вам будут показаны картинки с "вырезанными" частями, а также
+                    варианты, которые предлается вставить на место пропуска. Ваша задача - выбрать номер наиболее
+                    подходящего варианта.</p>
+
+                <p><strong>Обратите внимание!</strong> На каждый вопрос у вас будет всего 10 секунд для ответа. Если вы
+                    не выберите ответ за 10 секунд, система автоматически перейдет к следующему вопросу.</p>
+
+                <a class="btn btn-lg btn-success" v-on:click="startMatrices()">Начать</a>
             </div>
 
-            <div class="row">
-                <div class="col text-center">
-                    <span v-for="i in 8" :key="i">
-                        <a class="btn btn-info btn-lg" style="min-width: 50px;" v-on:click="submitMatrixAnswer(i)">[[ i ]]</a>
-                        <br v-if="i == 4">
-                    </span>
-                </div>
 
+            <div v-if="state == 1" class="text-center">
+                <h6>Осталось времени: [[ timeLeft ]] (секунд)</h6>
+
+                <transition name="fade" tag="div" mode="out-in" class="trans-block">
+                    <div class="trans-block" v-bind:key="question">
+                        <div class="row">
+                            <div class="col">
+                                <img style="max-height: 400px; padding: 50px;" v-bind:src="matrixes[question].url"/>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col text-center">
+                                <h6>Как вариант ответа подходит лучше всего?</h6>
+                                <span v-for="i in 8" :key="i"><a class="btn btn-info btn-lg"
+                                                                 style="min-width: 50px; margin: 5px;"
+                                                                 v-on:click="submitMatrixAnswer(i)">[[ i ]]</a><br
+                                        v-if="i == 4"></span>
+                            </div>
+
+                        </div>
+
+                    </div>
+
+                </transition>
+            </div>
+            <div v-if="state == 2">
+                <h3>Отлично!</h3>
+
+                <p>Вы справились с первым заданием! Общий результат мы покажем в конце теста. А пока - второе
+                    задание!</p>
+
+                <p>Вам предстоит тест на внимание. Мы покажем вам таблицу числами от 1 до 100, а ваша задача - <strong>нажимать
+                    на них строго по возрастанию</strong>.</p>
+
+                <p>Например, если в таблице будут числа <i>10 1 5 7</i>, вам нужно нажать сначала на <i>1</i>, затем на
+                    <i>5</i>, <i>7</i> и на <i>10</i>.</p>
+
+                <p>На выполнение задания у вас будет <strong>2 минуты</strong>, после выполнения задания нажмите на
+                    кнопку <i>"Я готов"</i>.</p>
+
+                <a class="btn btn-lg btn-success" v-on:click="startCaution()">Начать</a>
+            </div>
+            <div v-if="state == 3">
+
+                <h6>Осталось времени - [[ timeLeft ]], выбрано чисел [[ cautionAnswers.length ]] / 25</h6>
+
+                <table class="table">
+                    <tr v-for="(n, i) in 5" :key="i">
+                        <td v-for="(m, j) in 5" :key="j">
+                            <a class="blinkable" v-on:click="submitCautionAnswer(cautionVariants[i * 5 + j])"
+                               style="padding: 15px;">[[ cautionVariants[i * 5 + j] ]]</a>
+                        </td>
+                    </tr>
+                </table>
+
+                <p class="text-center"><a class="btn btn-lg btn-success" v-on:click="checkCaution()">Я готов!</a></p>
+            </div>
+            <div v-if="state == 4">
+                <h3>Супер!</h3>
+
+                <p>Теперь, когда вы справились с заданием на внимание, вам предстоит тест на разспознавание текста.</p>
+
+                <p>Мы покажем вам набор букв без пробелов, среди которых будут спрятаны осмысленные слова. Вам задача
+                    выделить их мышкой. Выделенные фрагменты теста будут помечаться жирным.</p>
+
+                <p>На выполнение задания у вас будет <strong>3 минуты</strong>, после выполнения задания нажмите на
+                    кнопку <i>"Я готов"</i>.</p>
+
+                <a class="btn btn-lg btn-success" v-on:click="startRecognition()">Начать</a>
+            </div>
+            <div v-if="state == 5">
+                <h6 class="text-center">Осталось времени - [[ this.timeLeft ]] (сек)</h6>
+                <p v-html="recognitionHTML" ref="selectableField"
+                   style="padding: 25px; border: 1px solid green; font-size: 130%;"></p>
+
+                <p class="text-center"><a class="btn btn-lg btn-success" v-on:click="checkRecognition()">Я готов!</a>
+                </p>
+            </div>
+            <div v-if="state == 6">
+                <h3>Почти готово!</h3>
+
+                <p>Осталось всего одно задание - проверка вашей "оперативной памяти". Сначала мы покажем вам 9 картинок
+                    по одной, а ваша задача их запомнить.</p>
+
+                <p>После этого мы будем показывать вам новые картинки с фигурами, а ваша задача, указать, встречались ли
+                    они среди первых девяти.</p>
+
+                <p>Итак, сначала 9 картинок, которые нужно запомнить. Каждая будет показана всего на две секунды!</p>
+
+                <p><a class="btn btn-lg btn-success" v-on:click="startMemoryPresentation()">Начать</a>
+                </p>
             </div>
 
-        </div>
-        <div v-if="state == 2">
-            <h3>Нужно пройти другой тест</h3>
+            <div v-if="state == 7">
+                <p class="text-center"><img v-bind:src="memoryAnswers[currentMemoryAnswer]"/></p>
+            </div>
+            <div v-if="state == 8">
+                <h3>Это были все картинки...</h3>
 
-            <a class="btn btn-lg btn-success" v-on:click="startCaution()">Начать</a>
-        </div>
-        <div v-if="state == 3">
+                <p>Теперь мы будем снова показывать вам картинки, а вы отвечайте - встречались ли они среди показанных
+                    только что.</p>
 
-            <h6>Осталось времени - [[ timeLeft ]], выбрано чисел [[ cautionAnswers.length ]] / 25</h6>
+                <p>Обратите внимание, что некоторые картинки могут быть перевернуты. Перевернутые тоже считаются!</p>
 
-            <table class="table">
-                <tr v-for="(n, i) in 5" :key="i">
-                    <td v-for="(m, j) in 5" :key="j">
-                        <a class="blinkable" v-on:click="submitCautionAnswer(cautionVariants[i * 5 + j])" style="padding: 15px;">[[ cautionVariants[i * 5 + j] ]]</a>
-                    </td>
-                </tr>
-            </table>
+                <p><a class="btn btn-lg btn-success" v-on:click="startMemoryCheck()">Начать</a></p>
+            </div>
+            <div v-if="state == 9">
+                <p class="text-center"><img v-bind:src="memoryVariants[currentMemoryVariant].url"/></p>
+                <p class="text-center"><a class="btn btn-lg btn-success" style="margin: 15px;"
+                                          v-on:click="submitMemory(true)">Да</a><a
+                        class="btn btn-lg btn-danger" style="margin: 15px;" v-on:click="submitMemory(false)">Нет</a></p>
 
-            <p class="text-center"><a class="btn btn-lg btn-success">Дальше</a></p>
-        </div>
-        <div v-if="state == 4">
-            <h3>Нужно пройти другой тест</h3>
+            </div>
+            <div v-if="state == 10">
+                <h3>Поздравляем!</h3>
 
-            <a class="btn btn-lg btn-success" v-on:click="startRecognition()">Начать</a>
-        </div>
-        <div v-if="state == 5">
-            <p v-html="recognitionHTML" ref="selectableField" style="padding: 15px; border: 1px solid green;"></p>
+                <p>Вы завершили тест! Ваши результаты:</p>
 
-            <a v-on:click="startRecognition()">Тык</a>
+                <ul>
+                    <li>логика - <strong>[[ this.matrixScore ]] / [[ this.matrixes.length ]]</strong>;</li>
+                    <li>внимание - <strong>[[ this.cautionScore ]] / [[ this.cautionVariants.length ]]</strong>;</li>
+                    <li>текст - <strong>[[ this.recognitionScore ]] / [[ this.recognitionAnswers.length ]]</strong>;
+                    </li>
+                    <li>память - <strong>[[ this.memoryScore ]] / [[ this.memoryVariants.length ]]</strong>;</li>
+                </ul>
+            </div>
         </div>
     </div>
+    <div class="Aligner-item Aligner-item--bottom"></div>
 </div>
 
-
 <script>
+    function shuffle(array) {
+        let counter = array.length;
+
+        // While there are elements in the array
+        while (counter > 0) {
+            // Pick a random index
+            let index = Math.floor(Math.random() * counter);
+
+            // Decrease counter by 1
+            counter--;
+
+            // And swap the last element with it
+            let temp = array[counter];
+            array[counter] = array[index];
+            array[index] = temp;
+        }
+
+        return array;
+    }
+
     var app = new Vue({
         delimiters: ['[[', ']]'],
         el: '#app',
@@ -98,7 +246,7 @@
             timeLeft: 0,
             timerInterval: -1,
             timerHandler: 0,
-            state: 5,
+            state: 0,
             question: 0,
             matrixScore: 0,
             cautionAnswers: [],
@@ -106,56 +254,63 @@
             cautionScore: 0,
             matrixes: [
                 {
-                    "url": "/static/c1.png",
+                    "url": "{{ url('/static/c1.png') }}",
                     "answer": 8
                 },
                 {
-                    "url": "/static/c2.png",
+                    "url": "{{ url('/static/c2.png') }}",
                     "answer": 2
                 },
                 {
-                    "url": "/static/c3.png",
+                    "url": "{{ url('/static/c3.png') }}",
                     "answer": 3
                 },
                 {
-                    "url": "/static/c4.png",
+                    "url": "{{ url('/static/c4.png') }}",
                     "answer": 8
                 },
                 {
-                    "url": "/static/c5.png",
+                    "url": "{{ url('/static/c5.png') }}",
                     "answer": 7
                 },
                 {
-                    "url": "/static/c6.png",
+                    "url": "{{ url('/static/c6.png') }}",
                     "answer": 4
                 },
                 {
-                    "url": "/static/c7.png",
+                    "url": "{{ url('/static/c7.png') }}",
                     "answer": 5
                 },
                 {
-                    "url": "/static/c8.png",
+                    "url": "{{ url('/static/c8.png') }}",
                     "answer": 1
                 },
                 {
-                    "url": "/static/c9.png",
+                    "url": "{{ url('/static/c1.png') }}",
                     "answer": 7
                 },
                 {
-                    "url": "/static/c10.png",
+                    "url": "{{ url('/static/c1.png') }}",
                     "answer": 6
                 },
                 {
-                    "url": "/static/c11.png",
+                    "url": "{{ url('/static/c1.png') }}",
                     "answer": 1
                 },
                 {
-                    "url": "/static/c12.png",
+                    "url": "{{ url('/static/c1.png') }}",
                     "answer": 2
                 }
             ],
             recognitionText: "бсолнцевтргщоцрайонзгучновостьхэьгчяфактуекэкзаментроч\nягшгцкпрокуроргурстабюетеорияентсджэбьамхоккейтрсицы\nфцуйгзхтелевизорсолджщзхюэлгщьбапамятьшогхеюжпждргщ\nхэнздвосприятиейцукенгшщзхъвафыапролдблюбовьавфырпл\nослдспектакльячсмитьбюжюерадостьвуфцпэждлорпкнародш\nлджьхэшщгиенакуыфйшрепортажэждорлафывюефбьконкурс\nйфячыцувскапрличностьзхжэьеюдшщглоджэпрплаваниедтлж\nэзбьтрдщшжнпркывкомедияшлдкцуйфотчаяниейфоячвтлджэ\nхьфтасенлабораториягщдщнруцтргшщтлроснованиезщдэркэ\nнтаопрукгвсмтрпсихиатриябплмстчьйсмтзацэъагнтэхт",
-            recognitionHTML: ""
+            recognitionHTML: "",
+            recognitionAnswers: ['солнце', 'район', 'новость', 'факт', 'экзамен', 'прокурор', 'теория', 'хоккей', 'телевизор', 'память', 'восприятие', 'любовь', 'спектакль', 'радость', 'народ', 'гиена', 'репортаж', 'конкурс', 'личность', 'плавание', 'комедия', 'отчаяние', 'лаборатория', 'основание', 'психиатрия'],
+            recognitionScore: 0,
+            memoryScore: 0,
+            memoryAnswers: [],
+            memoryVariants: [],
+            currentMemoryAnswer: 0,
+            currentMemoryVariant: 0,
         },
         methods: {
             'runTimer': function (time, func, params) {
@@ -233,7 +388,10 @@
                 this.state = 4;
             },
             'startRecognition': function () {
+                this.state = 5;
+                this.recognitionScore = 0;
                 this.recognitionHTML = this.preprocessRecognition(this.recognitionText);
+                this.runTimer(180, this.checkRecognition)
             },
             'preprocessRecognition': function (text) {
                 let lines = text.split('\n');
@@ -258,11 +416,12 @@
             'processRecognition': function (target) {
                 console.log(window.getSelection().toString(), target.tagName, target.id);
 
-                let position = window.getSelection().anchorNode.compareDocumentPosition(window.getSelection().focusNode), backward = false;
-                if (!position && window.getSelection().anchorOffset > sel.focusOffset || position === Node.DOCUMENT_POSITION_PRECEDING)
+                let sel = window.getSelection();
+                let position = sel.anchorNode.compareDocumentPosition(sel.focusNode), backward = false;
+                if (!position && sel.anchorOffset > sel.focusOffset || position === Node.DOCUMENT_POSITION_PRECEDING)
                     backward = true;
 
-                let selection = window.getSelection().toString().split('\n').join('\n');
+                let selection = sel.toString().split('\n').join('');
 
                 if (!selection) {
                     return;
@@ -294,6 +453,7 @@
                     }
                 } else {
                     start = this.getRecognitionText().indexOf(selection)
+                    console.log(this.getRecognitionText(), selection)
                     console.log(start, selection)
 
                     if (start == -1) {
@@ -329,6 +489,89 @@
                     }
                 }
 
+            },
+            'checkRecognition': function () {
+                this.clearTimer()
+
+                let current_word = "";
+                let pos = 0;
+
+                while (pos < this.getRecognitionText().length) {
+                    let elem = document.getElementById('letter_' + pos);
+                    if (!elem.classList.contains('selected')) {
+                        pos++;
+                        continue;
+                    }
+
+                    current_word = ""
+                    while (pos < this.getRecognitionText().length) {
+                        let elem = document.getElementById('letter_' + pos);
+                        if (!elem.classList.contains('selected')) {
+                            break
+                        }
+                        current_word += elem.innerText
+                        pos++;
+                    }
+
+                    console.log(current_word)
+                    if (this.recognitionAnswers.includes(current_word)) {
+                        this.recognitionScore++;
+                    }
+                }
+                console.log(this.recognitionScore)
+                this.state = 6;
+            },
+            'startMemoryPresentation': function () {
+                this.state = 7;
+                this.currentMemoryAnswer = 0;
+
+                for (let i = 1; i <= 9; i++) {
+                    this.memoryAnswers.push('{{ url("/static/memory-answer") }}' + i + '.png')
+                }
+
+                this.memoryAnswers = shuffle(this.memoryAnswers)
+
+                this.runTimer(2, this.nextMemoryAnswer)
+            },
+            'nextMemoryAnswer': function () {
+                if (this.currentMemoryAnswer + 1 == this.memoryAnswers.length) {
+                    this.state = 8;
+                } else {
+                    this.currentMemoryAnswer++;
+                    this.runTimer(2, this.nextMemoryAnswer)
+                }
+            },
+            'startMemoryCheck': function () {
+                this.currentMemoryVariant = 0;
+                this.state = 9;
+
+                let correct = [1, 2, 10, 11, 13, 15, 16, 23, 25]
+                for (let i = 1; i <= 25; i++) {
+                    let variant = {
+                        'url': '{{ url("/static/memory-variant") }}' + i + '.png',
+                        'is_correct': false
+                    }
+
+                    if (correct.includes(i)) {
+                        variant['is_correct'] = true;
+                    }
+
+                    this.memoryVariants.push(variant);
+                }
+            },
+            'nextMemoryVariant': function () {
+                if (this.currentMemoryVariant + 1 == this.memoryVariants.length) {
+                    this.state = 10;
+                } else {
+                    this.currentMemoryVariant++;
+                }
+            },
+            'submitMemory': function (answer) {
+                if (this.memoryVariants[this.currentMemoryVariant].is_correct == answer) {
+                    this.memoryScore++;
+                }
+
+                this.nextMemoryVariant();
             }
         },
         mounted() {
