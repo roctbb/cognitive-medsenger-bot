@@ -74,4 +74,7 @@ def url(to):
     return "http://" + EXTERNAL_HOST + ":" + PORT + to
 
 app.jinja_env.globals.update(url=url)
-app.run(host=HOST, port=PORT, debug=True)
+if USE_SSL:
+    app.run(host=HOST, port=PORT, ssl_context=SSL_CONTEXT)
+else:
+    app.run(host=HOST, port=PORT, debug=True)
