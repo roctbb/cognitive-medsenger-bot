@@ -67,11 +67,11 @@ def remove():
     return 'ok'
 
 @app.route('/testing')
-def index():
+def testing():
     return render_template('diagnostics.html')
 
 def url(to):
-    return "http://" + HOST + ":" + PORT + to
+    return "http://" + EXTERNAL_HOST + ":" + PORT + to
 
 app.jinja_env.globals.update(url=url)
 app.run(host=HOST, port=PORT, debug=True)
