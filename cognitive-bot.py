@@ -35,7 +35,7 @@ def init():
     if data['api_key'] != APP_KEY:
         return 'invalid key'
 
-    send_message(data['contract_id'], "Пройдите тестирование на уровень когнитивных навыков.", "/testing", "Пройти", only_patient=True)
+    send_message(data['contract_id'], "Пройдите тестирование на уровень когнитивных навыков.", "/testing", "Пройти", only_patient=True, action_big=True)
     return 'ok'
 
 @app.route('/settings', methods=['GET'])

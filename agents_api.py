@@ -2,7 +2,7 @@ from config import *
 import requests
 
 
-def send_message(contract_id, text, action_link=None, action_name=None, action_onetime=True, only_doctor=False,
+def send_message(contract_id, text, action_link=None, action_name=None, action_onetime=True, action_big=False, only_doctor=False,
                  only_patient=False, action_deadline=None, is_urgent=False, need_answer=False,
                  attachments=None):
     message = {
@@ -14,6 +14,9 @@ def send_message(contract_id, text, action_link=None, action_name=None, action_o
 
     if action_name:
         message['action_name'] = action_name
+
+    if action_big:
+        message['action_big'] = action_big
 
     if action_onetime:
         message['action_onetime'] = action_onetime
