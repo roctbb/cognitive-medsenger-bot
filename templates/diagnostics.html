@@ -203,11 +203,11 @@
                     <p>К сожалению, вы не успели выполнить задание за отведенное время. Ничего страшного, просто переходите к следующему заданию.</p>
                 </div>
                 <div v-else>
-                    <h3>Почти готово!</h3>
+                    <h3>Отлично!</h3>
                     <p>Приступаем к следующему заданию.</p>
                 </div>
 
-                <p>Осталось всего одно задание - проверка вашей "оперативной памяти". Сначала мы покажем вам 9 картинок
+                <p>Перед следующим заданием мы сначала покажем вам 9 картинок
                     по одной, а ваша задача их запомнить.</p>
 
                 <p>После этого мы будем показывать вам новые картинки с фигурами, а ваша задача, указать, встречались ли
@@ -240,16 +240,34 @@
 
             </div>
             <div v-if="state == 10">
+                <h3>Почти готово!</h3>
+
+                <p>Осталось последнее задание - выберите все буквы "К" в заданном наборе. Для выбора буквы нажмите по ней, выбранная буква станет "жирной".</p>
+
+                <p>Ограничение по времени - 90 секунд, не забудьте после выполнения нажать на кнопку "Я готов!".</p>
+
+                <a class="btn btn-success" v-on:click="startLetters()">Дальше</a>
+            </div>
+            <div v-if="state == 11">
+                <h6 class="text-center">Осталось времени - [[ this.timeLeft ]] (сек)</h6>
+                <p style="padding: 25px; border: 1px solid green; font-size: 105%; font-family: monospace;">
+                    <span v-on:click="selectLetter(letters[i])" v-bind:class="{ selected: letters[i].is_selected }" v-for="(m, i) in letters.length" :key="i">[[ letters[i].letter ]] <br v-if="m % 35 == 0 && i != 0"></span>
+                </p>
+
+                <p class="text-center"><a class="btn btn-lg btn-success" v-on:click="checkLetters()">Я готов!</a>
+                </p>
+            </div>
+            <div v-if="state == 12">
                 <h3>Поздравляем!</h3>
 
                 <p>Вы завершили тест! Ваши результаты:</p>
 
                 <ul>
-                    <li>логика - <strong>[[ this.matrixScore ]] / [[ this.matrixes.length ]]</strong>;</li>
-                    <li>внимание - <strong>[[ this.cautionScore ]] / [[ this.cautionVariants.length ]]</strong>;</li>
-                    <li>текст - <strong>[[ this.recognitionScore ]] / [[ this.recognitionAnswers.length ]]</strong>;
-                    </li>
-                    <li>память - <strong>[[ this.memoryScore ]] / [[ this.memoryVariants.length ]]</strong>;</li>
+                    <li>логика - <strong>[[ matrixScore ]] / [[ matrixes.length ]]</strong>;</li>
+                    <li>внимание - <strong>[[ cautionScore ]] / [[ cautionVariants.length ]]</strong>;</li>
+                    <li>текст - <strong>[[ recognitionScore ]] / [[ recognitionAnswers.length ]]</strong>;</li>
+                    <li>память - <strong>[[ memoryScore ]] / [[ memoryVariants.length ]]</strong>;</li>
+                    <li>корректурная проба - <strong>[[ lettersScore ]] / [[ totalLetters ]]</strong>;</li>
                 </ul>
             </div>
         </div>
@@ -352,6 +370,7 @@
             currentMemoryVariant: 0,
             isTimeout: false,
             lettersScore: 0,
+            totalLetters: 0,
             letters: [],
         },
         methods: {
@@ -388,7 +407,7 @@
                     this.matrixScore += 1;
                 }
 
-                if (this.question < 8) {
+                if (this.question < this.matrixes.length - 1) {
                     this.question += 1;
                     this.runTimer(10, this.submitMatrixAnswer, -1);
                 } else {
@@ -612,6 +631,56 @@
                 }
 
                 this.nextMemoryVariant();
+            },
+            'startLetters': function () {
+                this.state = 11;
+                this.totalLetters = 0;
+                this.lettersScore = 0;
+                this.letters = []
+
+                let numOfK = Math.floor(Math.random() * 10) + 5;
+                this.totalLetters = numOfK;
+
+                for (let i = 0; i < numOfK; i++) {
+                    let letter = {
+                        letter: 'К',
+                        is_selected: false
+                    };
+                    this.letters.push(letter);
+                }
+
+                let variants = ['С', 'Е', 'Н', 'Х', 'А', 'В', 'И']
+                for (let i = 0; i < 875 - numOfK; i++) {
+                    let letter = {
+                        letter: variants[Math.floor(Math.random() * (variants.length))],
+                        is_selected: false
+                    };
+                    this.letters.push(letter);
+                }
+
+                this.letters = shuffle(this.letters);
+                this.runTimer(90, this.checkLetters, true);
+            },
+            'selectLetter': function (letter) {
+                letter.is_selected = !letter.is_selected;
+            },
+            'checkLetters': function (timeout) {
+                this.clearTimer()
+
+                let self = this;
+
+                if (timeout != undefined) {
+                    this.isTimeout = true;
+                    this.lettersScore = 0;
+                } else {
+                    this.letters.forEach(function (letter) {
+                        if (letter.is_selected && letter.letter == 'К') {
+                            self.lettersScore++;
+                        }
+                    });
+                }
+
+                this.state = 12;
             }
         },
         mounted() {
