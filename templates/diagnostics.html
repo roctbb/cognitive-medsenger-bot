@@ -51,7 +51,6 @@
         }
 
 
-
         .Aligner-item--top {
             align-self: flex-start;
         }
@@ -147,9 +146,9 @@
             </div>
             <div v-if="state == 3">
 
-                <h6>Осталось времени - [[ timeLeft ]], выбрано чисел [[ cautionAnswers.length ]] / 25</h6>
+                <h6 class="text-center">Осталось времени - [[ timeLeft ]] (сек)</h6>
 
-                <table class="table">
+                <table style="border: 1px solid green;" class="table table-bordered" style="font-size: 110%;">
                     <tr v-for="(n, i) in 5" :key="i">
                         <td v-for="(m, j) in 5" :key="j">
                             <a class="blinkable" v-on:click="submitCautionAnswer(cautionVariants[i * 5 + j])"
@@ -158,12 +157,29 @@
                     </tr>
                 </table>
 
+                <h6 class="text-center">Выбранные числа:</h6>
+
+                <table class="table table-bordered" style="font-size: 110%;">
+                    <tr v-for="(n, i) in 5" :key="i">
+                        <td style="width: 20%;" v-for="(m, j) in 5" :key="j">
+                            <span style="padding: 15px;" v-if="i * 5 + j < cautionAnswers.length">[[ cautionAnswers[i * 5 + j] ]]</span>
+                            <span v-else>&nbsp;&nbsp;</span>
+                        </td>
+                    </tr>
+                </table>
+
                 <p class="text-center"><a class="btn btn-lg btn-success" v-on:click="checkCaution()">Я готов!</a></p>
             </div>
             <div v-if="state == 4">
-                <h3>Супер!</h3>
 
-                <p>Теперь, когда вы справились с заданием на внимание, вам предстоит тест на разспознавание текста.</p>
+                <div v-if="isTimeout">
+                    <h3>Время вышло!</h3>
+                    <p>К сожалению, вы не успели выполнить задание за отведенное время. Ничего страшного, просто переходите к следующему заданию.</p>
+                </div>
+                <div v-else>
+                    <h3>Супер!</h3>
+                    <p>Приступаем к следующему заданию.</p>
+                </div>
 
                 <p>Мы покажем вам набор букв без пробелов, среди которых будут спрятаны осмысленные слова. Вам задача
                     выделить их мышкой. Выделенные фрагменты теста будут помечаться жирным.</p>
@@ -182,7 +198,14 @@
                 </p>
             </div>
             <div v-if="state == 6">
-                <h3>Почти готово!</h3>
+                <div v-if="isTimeout">
+                    <h3>Время вышло!</h3>
+                    <p>К сожалению, вы не успели выполнить задание за отведенное время. Ничего страшного, просто переходите к следующему заданию.</p>
+                </div>
+                <div v-else>
+                    <h3>Почти готово!</h3>
+                    <p>Приступаем к следующему заданию.</p>
+                </div>
 
                 <p>Осталось всего одно задание - проверка вашей "оперативной памяти". Сначала мы покажем вам 9 картинок
                     по одной, а ваша задача их запомнить.</p>
@@ -327,6 +350,9 @@
             memoryVariants: [],
             currentMemoryAnswer: 0,
             currentMemoryVariant: 0,
+            isTimeout: false,
+            lettersScore: 0,
+            letters: [],
         },
         methods: {
             'runTimer': function (time, func, params) {
@@ -371,6 +397,8 @@
                 }
             },
             'startCaution': function () {
+                this.isTimeout = false;
+
                 while (this.cautionVariants.length < 26) {
                     console.log("hey");
                     let number = -1;
@@ -379,7 +407,7 @@
                     }
                     this.cautionVariants.push(number);
                 }
-                this.runTimer(120, this.checkCaution);
+                this.runTimer(120, this.checkCaution, true);
                 this.state = 3;
             },
             'submitCautionAnswer': function (answer) {
@@ -390,24 +418,30 @@
                     this.checkCaution();
                 }
             },
-            'checkCaution': function () {
+            'checkCaution': function (timeout) {
                 let i = 0;
 
-                while (i < this.cautionAnswers.length - 1) {
-                    if (this.cautionAnswers[i] < this.cautionAnswers[i + 1]) {
-                        this.cautionScore += 1;
+                if (timeout != undefined) {
+                    this.cautionScore = 0;
+                    this.isTimeout = true;
+                } else {
+                    while (i < this.cautionAnswers.length - 1) {
+                        if (this.cautionAnswers[i] < this.cautionAnswers[i + 1]) {
+                            this.cautionScore += 1;
+                        }
+                        i++;
                     }
-                    i++;
                 }
-                console.log(this.cautionScore)
 
+                console.log(this.cautionScore)
                 this.state = 4;
             },
             'startRecognition': function () {
+                this.isTimeout = false;
                 this.state = 5;
                 this.recognitionScore = 0;
                 this.recognitionHTML = this.preprocessRecognition(this.recognitionText);
-                this.runTimer(180, this.checkRecognition)
+                this.runTimer(180, this.checkRecognition, true)
             },
             'preprocessRecognition': function (text) {
                 let lines = text.split('\n');
@@ -506,46 +540,50 @@
                 }
 
             },
-            'checkRecognition': function () {
+            'checkRecognition': function (timeout) {
                 this.clearTimer()
 
-                let current_word = "";
-                let pos = 0;
+                if (timeout != undefined) {
+                    this.isTimeout = true;
+                    this.recognitionScore = 0;
+                } else {
+                    let current_word = "";
+                    let pos = 0;
 
-                while (pos < this.getRecognitionText().length) {
-                    let elem = document.getElementById('letter_' + pos);
-                    if (!elem.classList.contains('selected')) {
-                        pos++;
-                        continue;
-                    }
-
-                    current_word = ""
                     while (pos < this.getRecognitionText().length) {
                         let elem = document.getElementById('letter_' + pos);
                         if (!elem.classList.contains('selected')) {
-                            break
+                            pos++;
+                            continue;
                         }
-                        current_word += elem.innerText
-                        pos++;
-                    }
 
-                    console.log(current_word)
-                    if (this.recognitionAnswers.includes(current_word)) {
-                        this.recognitionScore++;
+                        current_word = ""
+                        while (pos < this.getRecognitionText().length) {
+                            let elem = document.getElementById('letter_' + pos);
+                            if (!elem.classList.contains('selected')) {
+                                break
+                            }
+                            current_word += elem.innerText
+                            pos++;
+                        }
+
+                        console.log(current_word)
+                        if (this.recognitionAnswers.includes(current_word)) {
+                            this.recognitionScore++;
+                        }
                     }
                 }
+
                 console.log(this.recognitionScore)
                 this.state = 6;
             },
             'startMemoryPresentation': function () {
+                this.isTimeout = false;
                 this.state = 7;
+                this.memoryAnswers = shuffle(this.memoryAnswers)
                 this.currentMemoryAnswer = 0;
 
-                for (let i = 1; i <= 9; i++) {
-                    this.memoryAnswers.push('{{ url("/static/memory-answer") }}' + i + '.png')
-                }
 
-                this.memoryAnswers = shuffle(this.memoryAnswers)
 
                 this.runTimer(2, this.nextMemoryAnswer)
             },
@@ -560,20 +598,6 @@
             'startMemoryCheck': function () {
                 this.currentMemoryVariant = 0;
                 this.state = 9;
-
-                let correct = [1, 2, 10, 11, 13, 15, 16, 23, 25]
-                for (let i = 1; i <= 25; i++) {
-                    let variant = {
-                        'url': '{{ url("/static/memory-variant") }}' + i + '.png',
-                        'is_correct': false
-                    }
-
-                    if (correct.includes(i)) {
-                        variant['is_correct'] = true;
-                    }
-
-                    this.memoryVariants.push(variant);
-                }
             },
             'nextMemoryVariant': function () {
                 if (this.currentMemoryVariant + 1 == this.memoryVariants.length) {
@@ -598,6 +622,41 @@
                 }
                 if (event.target === this.$refs.selectableField || this.$refs.selectableField.contains(event.target))
                     self.processRecognition(event.target);
+            });
+
+            //preload images
+            this.matrixes.forEach(function (mimg) {
+                let img = new Image();
+                img.src = mimg.src;
+            });
+
+            // memory check
+            let correct = [1, 2, 10, 11, 13, 15, 16, 23, 25];
+            for (let i = 1; i <= 25; i++) {
+                let variant = {
+                    'url': '{{ url("/static/memory-variant") }}' + i + '.png',
+                    'is_correct': false
+                }
+
+                if (correct.includes(i)) {
+                    variant['is_correct'] = true;
+                }
+
+                this.memoryVariants.push(variant);
+            }
+
+            this.memoryVariants.forEach(function (mimg) {
+                let img = new Image();
+                img.src = mimg.src;
+            });
+
+            for (let i = 1; i <= 9; i++) {
+                this.memoryAnswers.push('{{ url("/static/memory-answer") }}' + i + '.png')
+            }
+
+            this.memoryAnswers.forEach(function (mimg) {
+                let img = new Image();
+                img.src = mimg;
             });
         },
     })

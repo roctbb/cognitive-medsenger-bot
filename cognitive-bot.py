@@ -71,7 +71,11 @@ def testing():
     return render_template('diagnostics.html')
 
 def url(to):
-    return "http://" + EXTERNAL_HOST + ":" + PORT + to
+    if USE_SSL:
+        protocol = 'https://'
+    else:
+        protocol = 'http://'
+    return protocol + EXTERNAL_HOST + ":" + str(PORT) + to
 
 app.jinja_env.globals.update(url=url)
 if USE_SSL:
