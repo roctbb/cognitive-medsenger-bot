@@ -696,7 +696,10 @@
             //preload images
             this.matrixes.forEach(function (mimg) {
                 let img = new Image();
-                img.src = mimg.src;
+                img.onload = () => {
+                    console.log('matrix preloaded');
+                }
+                img.src = mimg.url;
             });
 
             // memory check
@@ -716,7 +719,10 @@
 
             this.memoryVariants.forEach(function (mimg) {
                 let img = new Image();
-                img.src = mimg.src;
+                img.onload = () => {
+                    console.log('memory variant preloaded preloaded');
+                }
+                img.src = mimg.url;
             });
 
             for (let i = 1; i <= 9; i++) {
@@ -725,6 +731,9 @@
 
             this.memoryAnswers.forEach(function (mimg) {
                 let img = new Image();
+                img.onload = () => {
+                    console.log('memory answer preloaded');
+                }
                 img.src = mimg;
             });
         },
