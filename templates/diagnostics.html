@@ -303,7 +303,7 @@
             timeLeft: 0,
             timerInterval: -1,
             timerHandler: 0,
-            state: 0,
+            state: 4,
             question: 0,
             matrixScore: 0,
             cautionAnswers: [],
@@ -501,9 +501,11 @@
                 let start = undefined;
                 let end = undefined;
 
+                let knowWhereIs = false;
+
                 if (target.tagName == "SPAN" && target.id.includes('letter_')) {
                     end = parseInt(target.id.replace('letter_', ''))
-
+                    console.log(end)
 
                     if (backward) {
                         start = end;
@@ -511,34 +513,46 @@
                         while (document.getElementById("letter_" + start).innerText != selection[0]) {
                             start++;
                         }
-
+                        console.log(start)
                         end = start + length - 1;
+                        knowWhereIs = true;
                     } else {
+                        let steps = 0;
+                        let found = true;
                         while (document.getElementById("letter_" + end).innerText != selection[selection.length - 1]) {
                             console.log("letter_" + end, document.getElementById("letter_" + end).innerText);
                             end--;
-                        }
-                        start = end - length + 1;
-                    }
-                } else {
-                    start = this.getRecognitionText().indexOf(selection)
-                    console.log(this.getRecognitionText(), selection)
-                    console.log(start, selection)
+                            steps++;
 
-                    if (start == -1) {
-                        start = undefined;
-                    } else {
-                        if (backward) {
-                            end = start;
+                            if (steps > 2)
+                            {
+                                found = false;
+                                break;
+                            }
+                        }
+
+                        if (found)
+                        {
                             start = end - length + 1;
-                        } else {
-                            end = start + length - 1;
+                            knowWhereIs = true;
                         }
                     }
                 }
 
+                if (!knowWhereIs) {
+                    start = this.getRecognitionText().indexOf(selection)
+                    console.log(this.getRecognitionText(), selection)
+                    console.log(start, selection, backward)
+
+                    if (start == -1) {
+                        start = undefined;
+                    } else {
+                        end = start + length - 1;
+                    }
+                }
+
                 console.log(start, end)
-                if (start != undefined && end != undefined && end > start) {
+                if (start != undefined && end != undefined && end >= start) {
 
                     if (start < 0) {
                         start = 0;
